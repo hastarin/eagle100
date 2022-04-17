@@ -1,14 +1,15 @@
 # uEagle
-Rainforest EAGLE client
+Rainforest EAGLE 100 client
 
-Basic, lightweight client for accessing the local REST API of Rainforest Automation's EAGLE device.
+Basic, lightweight client for accessing the local REST API of Rainforest Automation's EAGLE 100 device.
 
 Based off a micropython module, this uses minimal local resources.
 
+This has been forked from [toddsay/uEagle](https://github.com/toddsay/uEagle) to get his fix to [jcalber/uEagle](https://github.com/jcalbert/uEagle) published to PyPi.
 Example use:
 
 ```python
-from uEagle import Eagle
+from eagle100 import Eagle
  
 CLOUD_ID = '012abc'
 INSTALL_CODE = '0123456789abcdef'

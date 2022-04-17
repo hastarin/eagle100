@@ -1,3 +1,4 @@
+from sys import platform
 import json
 import time
 import logging
@@ -19,20 +20,19 @@ SAFETY_ON = True
 # Enumerations
 if SAFETY_ON:
     PROTOCOL_VALS = ('ZigBee',)
-    STATUS_VALS   = ('Initializing', 'Network', 'Discovery', 'Joining',
-                     'Join: Fail', 'Join: Success', 'Authenticating',
-                     'Authenticating: Success', 'Authenticating: Fail',
-                     'Connected', 'Disconnected', 'Rejoining')
-    YESNO_VALS    = ('Y', 'N')
+    STATUS_VALS = ('Initializing', 'Network', 'Discovery', 'Joining',
+                   'Join: Fail', 'Join: Success', 'Authenticating',
+                   'Authenticating: Success', 'Authenticating: Fail',
+                   'Connected', 'Disconnected', 'Rejoining')
+    YESNO_VALS = ('Y', 'N')
     PRIORITY_VALS = ('Low', 'Medium', 'High', 'Critical')
-    QUEUE_VALS    = ('Active', 'Cancel Pending')
-    EVENT_VALS    = ('', 'time', 'message', 'price', 'summation', 'demand',
-                     'scheduled_prices', 'profile_data', 'billing_period',
-                     'block_period')
-    TARGET_VALS   = ('Zigbee', 'Eagle', 'All')
+    QUEUE_VALS = ('Active', 'Cancel Pending')
+    EVENT_VALS = ('', 'time', 'message', 'price', 'summation', 'demand',
+                  'scheduled_prices', 'profile_data', 'billing_period',
+                  'block_period')
+    TARGET_VALS = ('Zigbee', 'Eagle', 'All')
 
 
-from sys import platform
 if platform in ('linux', 'unix'):
     EPOCH_DELTA = 946684800
 else:
@@ -65,8 +65,9 @@ class Eagle(object):
                                  data=post_data)
 
         if response.status_code == 503:
-            response = ATTEMPT_TO_UNSTICK_EAGLE(self, command, response.text, **kws)
-            
+            response = ATTEMPT_TO_UNSTICK_EAGLE(
+                self, command, response.text, **kws)
+
         if response.status_code != 200:
             response.raise_for_status()
 
@@ -99,7 +100,7 @@ class Eagle(object):
         return self.post_cmd('get_message')
 
     def confirm_message(self):  # Needs argument: ID
-        raise NotImplementedError('uEagle is read-only for now.')
+        raise NotImplementedError('eagle100 is read-only.')
 
     def get_current_summation(self):
         return self.post_cmd('get_current_summation')
@@ -113,13 +114,14 @@ class Eagle(object):
         if frequency is not None:
             if SAFETY_ON:
                 if frequency > 0xffff or frequency < 0:
-                    raise ValueError('frequency must be between 0 and 65535 seconds')
+                    raise ValueError(
+                        'frequency must be between 0 and 65535 seconds')
             kw['Frequency'] = hex(int(frequency))
 
         return self.post_cmd('get_history_data', **kw)
 
     def set_schedule(self):  # Needs arguments: Event, Frequency, Enabled
-        raise NotImplementedError('uEagle is read-only for now.')
+        raise NotImplementedError('eagle100 is read-only.')
 
     def get_schedule(self, event=None):
         if event is None:
@@ -130,7 +132,7 @@ class Eagle(object):
         return self.post_cmd('get_schedule', Event=event)
 
     def reboot(self):  # Needs argument: Target
-        raise NotImplementedError('uEagle is read-only for now.')
+        raise NotImplementedError('eagle100 is read-only.')
 
     def get_demand_peaks(self):
         return self.post_cmd('get_demand_peaks')
@@ -171,8 +173,10 @@ def convert_demand(d):
         new_int_demand = unpack('>i', bytes_demand)[0]
         d['Demand'] = round(new_int_demand*factor, n_dec)
     else:
-        d['SummationDelivered'] = round(int(d['SummationDelivered'], 0)*factor, n_dec)
-        d['SummationReceived'] = round(int(d['SummationReceived'], 0)*factor, n_dec)
+        d['SummationDelivered'] = round(
+            int(d['SummationDelivered'], 0)*factor, n_dec)
+        d['SummationReceived'] = round(
+            int(d['SummationReceived'], 0)*factor, n_dec)
 
     del d['Multiplier']
     del d['Divisor']
@@ -198,6 +202,7 @@ def TEMP_RESPONSE_FIX(s):
         return '{' + s + '}'
     return s
 
+
 def ATTEMPT_TO_UNSTICK_EAGLE(self, command, orig_response, **kws):
     '''
     By the process of trial and error...
@@ -214,7 +219,8 @@ def ATTEMPT_TO_UNSTICK_EAGLE(self, command, orig_response, **kws):
                              headers=self._headers,
                              data=post_data)
     if response.status_code == 200:
-        _LOGGER.warning("Eagle success after retry (original response: %s)", orig_response)
+        _LOGGER.warning(
+            "Eagle success after retry (original response: %s)", orig_response)
         return response
 
     # Try to unstick by issuing the same get_historical_data command used by the web page
@@ -226,37 +232,41 @@ def ATTEMPT_TO_UNSTICK_EAGLE(self, command, orig_response, **kws):
 
     if response.status_code == 200:
         # If that was successful (but probably an empty response), wait a bit for it to recover
-        time.sleep(15) # Eagle seems to take some time to 'wake up' from the bad state
+        # Eagle seems to take some time to 'wake up' from the bad state
+        time.sleep(15)
         # Re-issue the original command
         post_data = self.make_cmd(command, **kws)
         response = requests.post(self.addr,
                                  headers=self._headers,
                                  data=post_data)
         if response.status_code == 200:
-            _LOGGER.warning("Eagle 'unstick' successful: %s (original response: %s)", response.text, orig_response)
-        else: # Note: at this point it is possible it's working again but requires a bit more time
-            _LOGGER.error("Eagle 'unstick' failed: %s [%s], (original response: %s)", response.text, response.status_code, orig_response)
+            _LOGGER.warning(
+                "Eagle 'unstick' successful: %s (original response: %s)", response.text, orig_response)
+        else:  # Note: at this point it is possible it's working again but requires a bit more time
+            _LOGGER.error("Eagle 'unstick' failed: %s [%s], (original response: %s)",
+                          response.text, response.status_code, orig_response)
     else:
-        _LOGGER.error("Eagle 'unstick' attempt failed: %s [%s]", response.text, response.status_code)
+        _LOGGER.error(
+            "Eagle 'unstick' attempt failed: %s [%s]", response.text, response.status_code)
 
     return response
 
-#notes
-#More recent API (1.1) supports command list_network
-##list_network does not return JSON
-##gets info on all network interfaces
+# notes
+# More recent API (1.1) supports command list_network
+# list_network does not return JSON
+# gets info on all network interfaces
 #
-#When running locally, API Commands to not actually require MAC address
+# When running locally, API Commands to not actually require MAC address
 
-#Since this is python3 compatible, we assumme int / int = float
+# Since this is python3 compatible, we assumme int / int = float
 
-#the EAGLE's Epoch is 01-01-2000, rather than unix's 1970.
-#Each command needs:
+# the EAGLE's Epoch is 01-01-2000, rather than unix's 1970.
+# Each command needs:
 # POST with
 ## headers: auth
 ## body: xml
-#<Command>
+# <Command>
 # 	<Name>COMMAND</Name>
 # 	<Format>JSON</Format>
 #   <MAYBE OTHER OPTIONS>
-#</Command>
+# </Command>
