@@ -1,5 +1,5 @@
-# uEagle
-Rainforest EAGLE 100 client
+# eagle100
+Rainforest EAGLE 100 client (forked from uEagle)
 
 Basic, lightweight client for accessing the local REST API of Rainforest Automation's EAGLE 100 device.
 
