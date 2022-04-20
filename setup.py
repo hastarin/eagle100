@@ -22,6 +22,7 @@ setup(
     author='Jon Benson',
     author_email='jon.benson@hastarin.com',
     description='Tool to read data from Rainforest Legacy Eagle.',
+    license='MIT',
     long_description=long_description,
     long_description_content_type='text/markdown',
     keywords='rainforest eagle',
